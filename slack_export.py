@@ -108,8 +108,18 @@ def channelRename( oldRoomName, newRoomName ):
     if not os.path.isdir( oldRoomName ):
         return
     mkdir( newRoomName )
-    for fileName in os.listdir( oldRoomName ):
+    for fileName in [ f for f in os.listdir( oldRoomName ) if f != 'files' ]:
         shutil.move( os.path.join( oldRoomName, fileName ), newRoomName )
+
+    if os.path.isdir(os.path.join( oldRoomName, 'files')):
+        oldFilesDir = os.path.join( oldRoomName, 'files')
+        newFilesDir = os.path.join( newRoomName, 'files')
+
+        mkdir(newFilesDir)
+        for fileName in os.listdir( oldFilesDir):
+            shutil.move(os.path.join(oldFilesDir,fileName),newFilesDir)
+        os.rmdir(oldFilesDir)
+
     os.rmdir( oldRoomName )
 
 
