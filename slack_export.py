@@ -5,6 +5,7 @@ import os
 import io
 import shutil
 import copy
+import urllib
 from datetime import datetime
 from pick import pick
 from time import sleep
@@ -44,7 +45,7 @@ class Slacker_Wrapper:
             return self.client.conversations_history(channel=channel, latest=latest, oldest=oldest, count=count)
         
         def list(self):
-            return self.client.conversations_list(types=self.types)
+            return self.client.conversations_list(types=self.types, limit=1000)
     
     class Users:
         def __init__(self, webclient):
@@ -126,6 +127,31 @@ def writeMessageFile( fileName, messages ):
         json.dump( messages, outFile, indent=4)
 
 
+def downloadFiles(roomDir, message):
+    if 'files' not in message.keys():
+        return
+
+    filesDir = os.path.join(roomDir, 'files')
+    if not os.path.isdir(filesDir):
+        mkdir (filesDir)
+
+    for f in message['files']:
+        if not ('name' in f and 'url_private' in f):
+            continue
+
+        destFilePath=os.path.join(filesDir,"{:%Y%m%d_%H%M%S}_{}".format(parseTimeStamp(message['ts']), f['name']))
+        srcUrl=f['url_private']
+        try:
+            print("\t Downloading {}...\t".format(f['name']), end="", flush=True)
+            with open(destFilePath, "wb") as dest:
+                req = urllib.request.Request(srcUrl)
+                req.add_header('Authorization', 'Bearer {}'.format(args.token))
+                with urllib.request.urlopen(req) as response:
+                    shutil.copyfileobj(response,dest)
+            print("OK")
+        except IOError as e:
+            print("ERROR")
+
 # parse messages by date
 def parseMessages( roomDir, messages, roomType ):
     nameChangeFlag = roomType + "_name"
@@ -152,6 +178,9 @@ def parseMessages( roomDir, messages, roomType ):
             newRoomPath = roomDir
             channelRename( oldRoomPath, newRoomPath )
 
+        if ('files' in message.keys() and args.downloadFiles):
+            downloadFiles(roomDir, message)
+
         currentMessages.append( message )
     outFileName = u'{room}/{file}.json'.format( room = roomDir, file = currentFileDate )
     writeMessageFile( outFileName, currentMessages )
@@ -174,9 +203,9 @@ def fetchPublicChannels(channels):
         return
 
     for channel in channels:
-        channelDir = channel['name'].encode('utf-8')
+        channelDir = channel['name']
         print(u"Fetching history for Public Channel: {0}".format(channelDir))
-        channelDir = channel['name'].encode('utf-8')
+        channelDir = channel['name']
         mkdir( channelDir )
         messages = getHistory(slack.channels, channel['id'])
         parseMessages( channelDir, messages, 'channel')
@@ -372,6 +401,12 @@ if __name__ == "__main__":
         action='store_true',
         default=False,
         help="Prompt you to select the conversations to export")
+
+    parser.add_argument(
+       '--downloadFiles',
+       action='store_true',
+       default=False,
+       help="Also download attachments of messages")
 
     args = parser.parse_args()
 
