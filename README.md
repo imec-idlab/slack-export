@@ -57,7 +57,7 @@ python3 slack_export.py --token <token>... --zip slack_export
 ```
 
 When the `--downloadFiles` option is specified, files posted in the channels are stored in the `<channel_name>/files` directory inside the export. Filenames are prefixed with a timestamp of the message to which they are attached to prevent filename conflicts. 
-Downloaded files are not visible when the export is browsed with (slack-export-viewer)[https://github.com/hfaran/slack-export-viewer/] as this tool currently does not have support for embedded files.
+Downloaded files are not visible when the export is browsed with [slack-export-viewer](https://github.com/hfaran/slack-export-viewer/) as this tool currently does not have support for embedded files.
 
 Please note that simultaneous use of `--downloadFiles` and `--zip` is not recommended as this will, in most cases result in a huge zip-file being created.
 
